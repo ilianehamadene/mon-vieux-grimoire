@@ -18,17 +18,20 @@ exports.signUp = (req, res, next) => {
   };
 
   exports.login = (req, res, next) => {
+    // recupere user qui va avec le mail 
     User.findOne({ email: req.body.email })
         .then(user => {
             if (!user) {
                 return res.status(401).json({ message: 'Paire login/mot de passe incorrecte'});
             }
+            // compare les mdp donné et de la bdd
             bcrypt.compare(req.body.password, user.password)
                 .then(valid => {
                     if (!valid) {
                         return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
                     }
                     res.status(200).json({
+                        // renvoie un objet avec tout le necessaire pour l'authentification et la nav de l'user pour ces prochaines request
                         userId: user._id,
                         token: jwt.sign(
                             { userId: user._id },
