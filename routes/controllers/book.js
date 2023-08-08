@@ -16,7 +16,7 @@ exports.createBook = (req, res, next) => {
       ...bookObject,
       userId: req.auth.userId,
       //creation de l'url pour l'image chargé
-      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.path}`
+      imageUrl: `${req.protocol}://${req.get('host')}/images/images/${req.file.filename}`
   });
 //Sauvegarde dans la BDD
   book.save()
@@ -44,14 +44,14 @@ exports.getAllBook = (req, res, next) => {
             // converti la requete JSON en objet si il y a une image 
             const bookObject = {
                 ...JSON.parse(req.body.book),
-                imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.path}`
+                imageUrl: `${req.protocol}://${req.get('host')}/images/images/${req.file.filename}`
             };
             // verifie l'user pour autorisation
             if (book.userId != req.auth.userId) {
                 res.status(401).json({ message : 'Non-autorisé'});
             } else {
                 // supprime l'ancienne photo si il a (du backend)
-                const fileToDelete = book.imageUrl.split('/images/')[1];
+                const fileToDelete = book.imageUrl.split('/images/images/')[1];
                 fs.unlink(`images/${fileToDelete}`, () => {
                     // Mise a jour du livre
                     Book.updateOne({ _id: req.params.id}, {...bookObject, _id: req.params.id})
@@ -102,7 +102,7 @@ exports.getAllBook = (req, res, next) => {
             } else {
 
                 // Supprime du backend end (dossier images)
-                const filename = book.imageUrl.split("/images/")[1];
+                const filename = book.imageUrl.split("/images/images")[1];
                 fs.unlink(`images/${filename}`, () => {
 
                     // supime de mongo DB

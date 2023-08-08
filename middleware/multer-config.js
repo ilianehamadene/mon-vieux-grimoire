@@ -2,6 +2,7 @@
 const multer = require('multer');
 const sharp = require ('sharp');
 const fs = require('fs');
+const path = require('path')
 
 const MIME_TYPES = {
     'image/jpg': 'jpg',
@@ -18,45 +19,23 @@ const storage = multer.diskStorage({
     filename: (req, file, callback) => {
         const name = file.originalname.split(' ').join('_');
         const extension = MIME_TYPES[file.mimetype];
-        callback(null, name + Date.now() + '.' + extension);
+        callback(null, name.split('.')[0] + '_' + Date.now() + '.' + extension);
     }
 });
 
 module.exports = multer({ storage }).single('image');
 
-const convertToWebp = (req, res, next) => {
-    // verifier si une image a etait chargé 
-    if (req.file && req.file.path) {
-        const originalImagePath = req.file.path;
-        // mettre l'extention webp pour optimiser le stockage
-        const outputPath = req.file.path.replace(/\.[^.]+$/, '.webp');
-        
-        // convertir l'image et la save avec sharp
-        sharp(originalImagePath)
-            .toFormat('webp')
-            .resize({
-                width: 602,
-                height: 650,
-                fit: 'cover'
-            })
-            .toFile(outputPath)
-            .then(() => {
-                // on suprimer le ficher de base si existant
-                if (fs.existsSync(originalImagePath)) {
-                    fs.unlinkSync(originalImagePath);
-                }
-                // mettre a jour dans images
-                req.file.path = outputPath.replace('images\\', '');
-                next();
-            })
-            .catch(error => {
-                console.error('Error converting image to webp:', error);
-                next();
-            });
-    } else {
-        
-        next();
-    }
-};
+const convertToWebp = async (req, res, next) => {
+    if(req.file){
+        //Changer le type d'image en webp
+        const newFileName = req.file.filename.split(".")[0]
+        req.file.filename = newFileName + ".webp"
+        const newName =newFileName + ".webp"
+        // Compresser l'image
+        await sharp(req.file.path).resize(400).toFile(path.resolve(req.file.destination, newName))
+        fs.unlinkSync(req.file.path)
+    }      
+    next()
+}
 
 module.exports.convertToWebp = convertToWebp;
